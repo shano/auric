@@ -81,3 +81,28 @@ def test_ping_returns_none_when_headers_missing(tmp_path):
         api_key="sk-ant-test",
     )
     assert provider.ping() is None
+
+
+@respx.mock
+def test_ping_extracts_unified_rate_limit_headers(tmp_path):
+    """OAuth users (Pro, Max) return unified headers instead of token headers."""
+    respx.post("https://api.anthropic.com/v1/messages").mock(
+        return_value=httpx.Response(
+            200,
+            headers={
+                "anthropic-ratelimit-unified-5h-utilization": "0.58",
+                "anthropic-ratelimit-unified-5h-reset": "1748432400",
+            },
+            json={"id": "msg_test", "content": [{"text": "."}]},
+        )
+    )
+    provider = ClaudeProvider(
+        stats_cache_path=tmp_path / "missing.json",
+        http_client=httpx.Client(),
+        api_key="sk-ant-oat-test",
+    )
+    result = provider.ping()
+    assert result is not None
+    assert result.remaining_pct == pytest.approx(0.42)
+    assert result.limit_type == "5hr_window"
+    assert result.requests_remaining is None
