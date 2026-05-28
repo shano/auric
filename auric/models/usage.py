@@ -30,8 +30,16 @@ class RateLimitState:
     reset_at: datetime
     limit_type: str
     requests_remaining: int | None
+    weekly_remaining_pct: float | None = None
+    weekly_reset_at: datetime | None = None
     is_stale: bool = False
 
     @property
     def remaining_pct_display(self) -> int:
         return round(self.remaining_pct * 100)
+
+    @property
+    def weekly_remaining_pct_display(self) -> int | None:
+        if self.weekly_remaining_pct is None:
+            return None
+        return round(self.weekly_remaining_pct * 100)
