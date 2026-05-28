@@ -49,6 +49,14 @@ class AutoDetector:
         )
 
     def resolve_vibe_api_key(self) -> str:
+        env_file = self._home / ".vibe" / ".env"
+        if env_file.exists():
+            try:
+                for line in env_file.read_text().splitlines():
+                    if line.startswith("MISTRAL_API_KEY="):
+                        return line.split("=", 1)[1].strip().strip("'\"")
+            except OSError:
+                pass
         return os.environ.get("MISTRAL_API_KEY", "")
 
     def resolve_claude_api_key(self) -> str:

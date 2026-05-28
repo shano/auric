@@ -59,6 +59,10 @@ class PopupMenu:
                 parts.append(
                     f"7d: {rl.weekly_remaining_pct_display}% · resets {weekly_reset}"
                 )
+        elif provider.last_snapshot is not None:
+            s = provider.last_snapshot
+            tokens_k = (s.input_tokens + s.output_tokens) / 1000
+            parts.append(f"{tokens_k:.1f}K tokens · ${s.cost_usd:.4f} today")
         return " | ".join(parts)
 
     def _add_action(self, label: str, callback) -> None:
