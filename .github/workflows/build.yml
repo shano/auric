@@ -13,6 +13,9 @@ on:
         type: string
         description: "Release tag (e.g. v0.1.0)"
 
+permissions:
+  contents: write
+
 jobs:
   wheel:
     name: Build wheel
@@ -33,24 +36,28 @@ jobs:
     steps:
       - name: Install build deps
         run: |
-          dnf install -y git python3-devel pyproject-rpm-macros python3-gobject \
-            python3-httpx rpm-build rpmdevtools
+          dnf install -y git curl python3-devel python3-hatchling \
+            pyproject-rpm-macros python3-gobject rpm-build rpmdevtools
       - uses: actions/checkout@v4
-      - name: Set version from tag
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Build source tarball
+        run: uv build --sdist
+      - name: Patch spec version
         run: |
           VERSION="${{ inputs.tag }}"
-          VERSION="${VERSION#v}"
-          sed -i "s/^Version:.*/Version:        ${VERSION}/" packaging/auric.spec
+          sed -i "s/^Version:.*/Version:        ${VERSION#v}/" packaging/auric.spec
       - name: Build RPM
         run: |
           rpmdev-setuptree
           cp packaging/auric.spec ~/rpmbuild/SPECS/
-          uv build --sdist
-          cp dist/*.tar.gz ~/rpmbuild/SOURCES/
+          cp dist/auric-*.tar.gz ~/rpmbuild/SOURCES/
           rpmbuild -bb ~/rpmbuild/SPECS/auric.spec
-      - name: Collect RPM
-        run: find ~/rpmbuild/RPMS -name "*.rpm" -exec cp {} . \;
       - name: Upload to release
-        run: gh release upload "${{ inputs.tag }}" *.rpm --clobber
+        run: |
+          find ~/rpmbuild/RPMS -name "*.rpm" -exec cp {} . \;
+          gh release upload "${{ inputs.tag }}" *.rpm --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
