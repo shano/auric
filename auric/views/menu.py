@@ -1,5 +1,3 @@
-from datetime import UTC, date
-
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -41,17 +39,16 @@ class PopupMenu:
     def _format_label(self, provider: Provider) -> str:
         parts = [provider.display_name]
         if provider.rate_limit:
-            pct = provider.rate_limit.remaining_pct_display
-            reset = provider.rate_limit.reset_at.strftime("%-I:%M%p").lower()
-            parts.append(f"{pct}% · resets {reset}")
-        if provider.last_snapshot:
-            total = provider.last_snapshot.total_tokens
-            cost = provider.last_snapshot.cost_usd
-            snap_date = provider.last_snapshot.timestamp.astimezone(UTC).date()
-            day_label = (
-                "Today" if snap_date == date.today() else snap_date.strftime("%b %-d")
-            )
-            parts.append(f"{day_label}: {total:,} tokens · ${cost:.2f}")
+            rl = provider.rate_limit
+            reset = rl.reset_at.astimezone().strftime("%-I:%M%p").lower()
+            parts.append(f"5h: {rl.remaining_pct_display}% · resets {reset}")
+            if rl.weekly_remaining_pct is not None and rl.weekly_reset_at is not None:
+                weekly_reset = (
+                    rl.weekly_reset_at.astimezone().strftime("%a %-I:%M%p").lower()
+                )
+                parts.append(
+                    f"7d: {rl.weekly_remaining_pct_display}% · resets {weekly_reset}"
+                )
         return " | ".join(parts)
 
     def _add_action(self, label: str, callback) -> None:

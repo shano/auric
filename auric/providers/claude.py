@@ -104,6 +104,18 @@ class ClaudeProvider(AbstractProvider):
             try:
                 remaining_pct = 1.0 - float(utilization_str)
                 reset_at = datetime.fromtimestamp(int(unified_reset_str), tz=UTC)
+                weekly_pct_str = headers.get(
+                    "anthropic-ratelimit-unified-7d-utilization"
+                )
+                weekly_reset_epoch = headers.get("anthropic-ratelimit-unified-7d-reset")
+                weekly_remaining_pct = (
+                    max(0.0, 1.0 - float(weekly_pct_str)) if weekly_pct_str else None
+                )
+                weekly_reset_at = (
+                    datetime.fromtimestamp(int(weekly_reset_epoch), tz=UTC)
+                    if weekly_reset_epoch
+                    else None
+                )
             except (ValueError, OSError) as e:
                 log.warning("Failed to parse unified rate limit headers: %s", e)
                 return None
@@ -113,6 +125,8 @@ class ClaudeProvider(AbstractProvider):
                 reset_at=reset_at,
                 limit_type="5hr_window",
                 requests_remaining=None,
+                weekly_remaining_pct=weekly_remaining_pct,
+                weekly_reset_at=weekly_reset_at,
             )
 
         # Legacy format: direct API key users
