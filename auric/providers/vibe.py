@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import httpx
@@ -10,12 +10,7 @@ from auric.providers.base import AbstractProvider
 
 log = logging.getLogger(__name__)
 
-_PING_URL = "https://api.mistral.ai/v1/chat/completions"
-_PING_BODY = {
-    "model": "mistral-small-latest",
-    "max_tokens": 1,
-    "messages": [{"role": "user", "content": "."}],
-}
+_WHOAMI_URL = "https://console.mistral.ai/api/vibe/whoami"
 
 
 class VibeProvider(AbstractProvider):
@@ -89,45 +84,51 @@ class VibeProvider(AbstractProvider):
         if not self._api_key:
             return None
         try:
-            resp = self._http.post(
-                _PING_URL,
-                headers={
-                    "authorization": f"Bearer {self._api_key}",
-                    "content-type": "application/json",
-                },
-                json=_PING_BODY,
+            resp = self._http.get(
+                _WHOAMI_URL,
+                headers={"authorization": f"Bearer {self._api_key}"},
                 timeout=10.0,
             )
         except httpx.HTTPError as e:
-            log.warning("Mistral API ping failed: %s", e)
+            log.warning("Mistral whoami ping failed: %s", e)
             return None
 
-        return self._parse_rate_limit_headers(resp.headers)
+        if not resp.is_success:
+            log.warning("Mistral whoami returned %s", resp.status_code)
+            return None
 
-    def _parse_rate_limit_headers(
-        self, headers: httpx.Headers
-    ) -> RateLimitState | None:
-        remaining_str = headers.get("x-ratelimit-remaining-tokens-minute")
-        limit_str = headers.get("x-ratelimit-limit-tokens-minute")
-        requests_str = headers.get("x-ratelimit-remaining-req-minute")
+        return self._parse_whoami(resp.json())
 
-        if not all([remaining_str, limit_str]):
+    def _parse_whoami(self, payload: dict) -> RateLimitState | None:
+        tokens_used = payload.get("tokens_used", 0) or 0
+        tokens_limit = payload.get("tokens_limit", 0) or 0
+
+        if tokens_limit == 0:
             return None
 
         try:
-            remaining = int(remaining_str)
-            limit = int(limit_str)
-            remaining_pct = remaining / limit if limit > 0 else 0.0
-            reset_at = datetime.now(tz=UTC) + timedelta(seconds=60)
-            requests_remaining = int(requests_str) if requests_str else None
+            tokens_used = int(tokens_used)
+            tokens_limit = int(tokens_limit)
+            remaining_pct = max(0.0, (tokens_limit - tokens_used) / tokens_limit)
         except (ValueError, ZeroDivisionError) as e:
-            log.warning("Failed to parse Mistral rate limit headers: %s", e)
+            log.warning("Failed to parse whoami token fields: %s", e)
+            return None
+
+        reset_at = None
+        reset_str = payload.get("reset_time")
+        if reset_str and isinstance(reset_str, str):
+            try:
+                reset_at = datetime.fromisoformat(reset_str.replace("Z", "+00:00"))
+            except ValueError:
+                pass
+
+        if reset_at is None:
             return None
 
         return RateLimitState(
             provider_id=self.PROVIDER_ID,
             remaining_pct=remaining_pct,
             reset_at=reset_at,
-            limit_type="1min_window",
-            requests_remaining=requests_remaining,
+            limit_type="monthly",
+            requests_remaining=None,
         )

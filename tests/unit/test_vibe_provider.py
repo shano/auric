@@ -96,16 +96,17 @@ class TestVibeProviderPing:
         assert provider.ping() is None
 
     @respx.mock
-    def test_ping_parses_rate_limit_headers(self, tmp_path):
-        respx.post("https://api.mistral.ai/v1/chat/completions").mock(
+    def test_ping_parses_whoami_subscription(self, tmp_path):
+        respx.get("https://console.mistral.ai/api/vibe/whoami").mock(
             return_value=httpx.Response(
                 200,
-                headers={
-                    "x-ratelimit-remaining-tokens-minute": "450000",
-                    "x-ratelimit-limit-tokens-minute": "500000",
-                    "x-ratelimit-remaining-req-minute": "45",
+                json={
+                    "plan_type": "CHAT",
+                    "plan_name": "Pro",
+                    "tokens_used": 200000,
+                    "tokens_limit": 1000000,
+                    "reset_time": "2026-06-01T00:00:00Z",
                 },
-                json={"id": "chat_test", "choices": [{"message": {"content": "."}}]},
             )
         )
         provider = VibeProvider(
@@ -116,14 +117,17 @@ class TestVibeProviderPing:
         result = provider.ping()
         assert result is not None
         assert result.provider_id == "vibe"
-        assert result.remaining_pct == pytest.approx(0.9)
-        assert result.limit_type == "1min_window"
-        assert result.requests_remaining == 45
+        assert result.remaining_pct == pytest.approx(0.8)
+        assert result.limit_type == "monthly"
+        assert result.requests_remaining is None
 
     @respx.mock
-    def test_ping_returns_none_when_headers_missing(self, tmp_path):
-        respx.post("https://api.mistral.ai/v1/chat/completions").mock(
-            return_value=httpx.Response(200, json={"id": "chat_test"})
+    def test_ping_returns_none_when_no_token_limit(self, tmp_path):
+        respx.get("https://console.mistral.ai/api/vibe/whoami").mock(
+            return_value=httpx.Response(
+                200,
+                json={"plan_type": "CHAT", "plan_name": "EDU"},
+            )
         )
         provider = VibeProvider(
             logs_dir=tmp_path,
@@ -134,7 +138,7 @@ class TestVibeProviderPing:
 
     @respx.mock
     def test_ping_returns_none_on_network_error(self, tmp_path):
-        respx.post("https://api.mistral.ai/v1/chat/completions").mock(
+        respx.get("https://console.mistral.ai/api/vibe/whoami").mock(
             side_effect=httpx.ConnectError("connection refused")
         )
         provider = VibeProvider(

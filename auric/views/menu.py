@@ -8,8 +8,11 @@ from auric.models.provider import Provider, ProviderStatus  # noqa: E402
 _LIMIT_LABELS = {
     "5hr_window": "5h",
     "1min_window": "1min",
+    "monthly": "sub",
     "token_window": "tokens",
 }
+
+_LONG_RESET_TYPES = {"monthly"}
 
 
 class PopupMenu:
@@ -49,6 +52,9 @@ class PopupMenu:
             label = _LIMIT_LABELS.get(rl.limit_type, rl.limit_type)
             if rl.limit_type == "1min_window":
                 parts.append(f"{label}: {rl.remaining_pct_display}%")
+            elif rl.limit_type in _LONG_RESET_TYPES:
+                reset = rl.reset_at.astimezone().strftime("%b %-d %-I:%M%p").lower()
+                parts.append(f"{label}: {rl.remaining_pct_display}% · resets {reset}")
             else:
                 reset = rl.reset_at.astimezone().strftime("%-I:%M%p").lower()
                 parts.append(f"{label}: {rl.remaining_pct_display}% · resets {reset}")
