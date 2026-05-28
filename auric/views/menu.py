@@ -5,6 +5,12 @@ from gi.repository import Gtk  # noqa: E402
 
 from auric.models.provider import Provider, ProviderStatus  # noqa: E402
 
+_LIMIT_LABELS = {
+    "5hr_window": "5h",
+    "1min_window": "1min",
+    "token_window": "tokens",
+}
+
 
 class PopupMenu:
     def __init__(self) -> None:
@@ -40,8 +46,12 @@ class PopupMenu:
         parts = [provider.display_name]
         if provider.rate_limit:
             rl = provider.rate_limit
-            reset = rl.reset_at.astimezone().strftime("%-I:%M%p").lower()
-            parts.append(f"5h: {rl.remaining_pct_display}% · resets {reset}")
+            label = _LIMIT_LABELS.get(rl.limit_type, rl.limit_type)
+            if rl.limit_type == "1min_window":
+                parts.append(f"{label}: {rl.remaining_pct_display}%")
+            else:
+                reset = rl.reset_at.astimezone().strftime("%-I:%M%p").lower()
+                parts.append(f"{label}: {rl.remaining_pct_display}% · resets {reset}")
             if rl.weekly_remaining_pct is not None and rl.weekly_reset_at is not None:
                 weekly_reset = (
                     rl.weekly_reset_at.astimezone().strftime("%a %-I:%M%p").lower()
