@@ -2,11 +2,25 @@
 name = "auric"
 version = "0.1.0"
 description = "Linux/GNOME AI tool usage tracker"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "shano" }]
 requires-python = ">=3.11"
+keywords = ["gnome", "system-tray", "claude", "ai", "usage-tracker"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Environment :: X11 Applications :: GTK",
+    "Topic :: Utilities",
+]
 dependencies = [
     "httpx>=0.27.0",
     "tomli-w>=1.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/shano/auric"
+Issues = "https://github.com/shano/auric/issues"
 
 # System packages required (Fedora):
 #   sudo dnf install python3-gobject libayatana-appindicator-gtk3

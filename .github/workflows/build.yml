@@ -1,0 +1,56 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        required: true
+        type: string
+        description: "Release tag (e.g. v0.1.0)"
+
+jobs:
+  wheel:
+    name: Build wheel
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv build
+      - name: Upload to release
+        run: gh release upload "${{ inputs.tag }}" dist/* --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  rpm:
+    name: Build RPM (Fedora 41)
+    runs-on: ubuntu-latest
+    container: fedora:41
+    steps:
+      - name: Install build deps
+        run: |
+          dnf install -y git python3-devel pyproject-rpm-macros python3-gobject \
+            python3-httpx rpm-build rpmdevtools
+      - uses: actions/checkout@v4
+      - name: Set version from tag
+        run: |
+          VERSION="${{ inputs.tag }}"
+          VERSION="${VERSION#v}"
+          sed -i "s/^Version:.*/Version:        ${VERSION}/" packaging/auric.spec
+      - name: Build RPM
+        run: |
+          rpmdev-setuptree
+          cp packaging/auric.spec ~/rpmbuild/SPECS/
+          uv build --sdist
+          cp dist/*.tar.gz ~/rpmbuild/SOURCES/
+          rpmbuild -bb ~/rpmbuild/SPECS/auric.spec
+      - name: Collect RPM
+        run: find ~/rpmbuild/RPMS -name "*.rpm" -exec cp {} . \;
+      - name: Upload to release
+        run: gh release upload "${{ inputs.tag }}" *.rpm --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

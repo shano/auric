@@ -10,3 +10,4 @@ htmlcov/
 *.db
 .superpowers/
 uv.lock
+.claude/
