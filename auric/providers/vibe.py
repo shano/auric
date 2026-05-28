@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import httpx
@@ -107,22 +107,19 @@ class VibeProvider(AbstractProvider):
     def _parse_rate_limit_headers(
         self, headers: httpx.Headers
     ) -> RateLimitState | None:
-        remaining_str = headers.get("x-ratelimit-remaining-tokens")
-        limit_str = headers.get("x-ratelimit-limit-tokens")
-        reset_str = headers.get("x-ratelimit-reset-tokens")
+        remaining_str = headers.get("x-ratelimit-remaining-tokens-minute")
+        limit_str = headers.get("x-ratelimit-limit-tokens-minute")
+        requests_str = headers.get("x-ratelimit-remaining-req-minute")
 
-        if not all([remaining_str, limit_str, reset_str]):
+        if not all([remaining_str, limit_str]):
             return None
 
         try:
             remaining = int(remaining_str)
             limit = int(limit_str)
             remaining_pct = remaining / limit if limit > 0 else 0.0
-            # reset is seconds until reset
-            reset_secs = int(reset_str)
-            reset_at = datetime.fromtimestamp(
-                datetime.now(tz=UTC).timestamp() + reset_secs, tz=UTC
-            )
+            reset_at = datetime.now(tz=UTC) + timedelta(seconds=60)
+            requests_remaining = int(requests_str) if requests_str else None
         except (ValueError, ZeroDivisionError) as e:
             log.warning("Failed to parse Mistral rate limit headers: %s", e)
             return None
@@ -131,6 +128,6 @@ class VibeProvider(AbstractProvider):
             provider_id=self.PROVIDER_ID,
             remaining_pct=remaining_pct,
             reset_at=reset_at,
-            limit_type="token_window",
-            requests_remaining=None,
+            limit_type="1min_window",
+            requests_remaining=requests_remaining,
         )

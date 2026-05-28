@@ -101,9 +101,9 @@ class TestVibeProviderPing:
             return_value=httpx.Response(
                 200,
                 headers={
-                    "x-ratelimit-remaining-tokens": "450000",
-                    "x-ratelimit-limit-tokens": "500000",
-                    "x-ratelimit-reset-tokens": "3600",
+                    "x-ratelimit-remaining-tokens-minute": "450000",
+                    "x-ratelimit-limit-tokens-minute": "500000",
+                    "x-ratelimit-remaining-req-minute": "45",
                 },
                 json={"id": "chat_test", "choices": [{"message": {"content": "."}}]},
             )
@@ -117,8 +117,8 @@ class TestVibeProviderPing:
         assert result is not None
         assert result.provider_id == "vibe"
         assert result.remaining_pct == pytest.approx(0.9)
-        assert result.limit_type == "token_window"
-        assert result.requests_remaining is None
+        assert result.limit_type == "1min_window"
+        assert result.requests_remaining == 45
 
     @respx.mock
     def test_ping_returns_none_when_headers_missing(self, tmp_path):
