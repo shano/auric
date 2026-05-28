@@ -15,7 +15,7 @@ class TestAutoDetector:
         result = AutoDetector(home_dir=tmp_path).detect_claude()
         assert result.status == ProviderStatus.ACTIVE
         assert result.id == "claude"
-        assert result.display_name == "Claude Max"
+        assert result.display_name == "Claude Code"
 
     def test_not_detected_when_settings_missing(self, tmp_path, monkeypatch):
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
@@ -35,7 +35,7 @@ class TestAutoDetector:
         claude_dir.mkdir()
         (claude_dir / "settings.json").write_text("{}")
         (claude_dir / ".credentials.json").write_text(
-            json.dumps({"claudeAiOauthToken": "oauth-token-abc"})
+            json.dumps({"claudeAiOauth": {"accessToken": "oauth-token-abc"}})
         )
         result = AutoDetector(home_dir=tmp_path).detect_claude()
         assert result.status == ProviderStatus.ACTIVE

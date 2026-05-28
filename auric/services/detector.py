@@ -17,17 +17,17 @@ class AutoDetector:
         if not settings.exists():
             return Provider(
                 id="claude",
-                display_name="Claude Max",
+                display_name="Claude Code",
                 status=ProviderStatus.NOT_DETECTED,
             )
         if not self.resolve_claude_api_key():
             return Provider(
                 id="claude",
-                display_name="Claude Max",
+                display_name="Claude Code",
                 status=ProviderStatus.NOT_DETECTED,
             )
         return Provider(
-            id="claude", display_name="Claude Max", status=ProviderStatus.ACTIVE
+            id="claude", display_name="Claude Code", status=ProviderStatus.ACTIVE
         )
 
     def resolve_claude_api_key(self) -> str:
@@ -38,7 +38,7 @@ class AutoDetector:
         if creds.exists():
             try:
                 data = json.loads(creds.read_text())
-                token = data.get("claudeAiOauthToken", "")
+                token = data.get("claudeAiOauth", {}).get("accessToken", "")
                 if token:
                     return token
             except (json.JSONDecodeError, OSError):
