@@ -54,14 +54,35 @@ class TestClaudeFilePoller:
         )
         assert provider.poll() is None
 
-    def test_poll_returns_none_when_no_entry_for_today(self, tmp_path):
+    def test_poll_falls_back_to_most_recent_when_no_today_entry(self, tmp_path):
         data = {
             "version": 3,
             "dailyModelTokens": [
                 {"date": "2000-01-01", "tokensByModel": {"claude-sonnet-4-6": 1000}}
             ],
-            "modelUsage": {},
+            "modelUsage": {
+                "claude-sonnet-4-6": {
+                    "inputTokens": 500,
+                    "outputTokens": 500,
+                    "cacheReadInputTokens": 0,
+                    "cacheCreationInputTokens": 0,
+                    "costUSD": 0.0,
+                }
+            },
         }
+        cache = tmp_path / "stats-cache.json"
+        cache.write_text(json.dumps(data))
+        provider = ClaudeProvider(
+            stats_cache_path=cache,
+            http_client=MagicMock(spec=httpx.Client),
+        )
+        snapshot = provider.poll()
+        assert snapshot is not None
+        assert snapshot.total_tokens == 1000
+        assert snapshot.timestamp.date().isoformat() == "2000-01-01"
+
+    def test_poll_returns_none_when_no_daily_entries(self, tmp_path):
+        data = {"version": 3, "dailyModelTokens": [], "modelUsage": {}}
         cache = tmp_path / "stats-cache.json"
         cache.write_text(json.dumps(data))
         provider = ClaudeProvider(
@@ -94,5 +115,13 @@ class TestClaudeFilePoller:
         provider = ClaudeProvider(
             stats_cache_path=tmp_path / "missing.json",
             http_client=MagicMock(spec=httpx.Client),
+        )
+        assert provider.ping() is None
+
+    def test_ping_returns_none_with_oauth_token(self, tmp_path):
+        provider = ClaudeProvider(
+            stats_cache_path=tmp_path / "missing.json",
+            http_client=MagicMock(spec=httpx.Client),
+            api_key="claude-oauth-token-abc123",
         )
         assert provider.ping() is None

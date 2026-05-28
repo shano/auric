@@ -1,3 +1,5 @@
+from datetime import UTC, date
+
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -45,7 +47,11 @@ class PopupMenu:
         if provider.last_snapshot:
             total = provider.last_snapshot.total_tokens
             cost = provider.last_snapshot.cost_usd
-            parts.append(f"Today: {total:,} tokens · ${cost:.2f}")
+            snap_date = provider.last_snapshot.timestamp.astimezone(UTC).date()
+            day_label = (
+                "Today" if snap_date == date.today() else snap_date.strftime("%b %-d")
+            )
+            parts.append(f"{day_label}: {total:,} tokens · ${cost:.2f}")
         return " | ".join(parts)
 
     def _add_action(self, label: str, callback) -> None:
