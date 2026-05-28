@@ -9,5 +9,4 @@ htmlcov/
 .ruff_cache/
 *.db
 .superpowers/
-uv.lock
 .claude/
