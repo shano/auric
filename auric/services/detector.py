@@ -10,7 +10,7 @@ class AutoDetector:
         self._home = home_dir or Path.home()
 
     def detect_all(self) -> list[Provider]:
-        return [self.detect_claude()]
+        return [self.detect_claude(), self.detect_vibe()]
 
     def detect_claude(self) -> Provider:
         settings = self._home / ".claude" / "settings.json"
@@ -29,6 +29,27 @@ class AutoDetector:
         return Provider(
             id="claude", display_name="Claude Code", status=ProviderStatus.ACTIVE
         )
+
+    def detect_vibe(self) -> Provider:
+        config = self._home / ".vibe" / "config.toml"
+        if not config.exists():
+            return Provider(
+                id="vibe",
+                display_name="Mistral Vibe",
+                status=ProviderStatus.NOT_DETECTED,
+            )
+        if not self.resolve_vibe_api_key():
+            return Provider(
+                id="vibe",
+                display_name="Mistral Vibe",
+                status=ProviderStatus.NOT_DETECTED,
+            )
+        return Provider(
+            id="vibe", display_name="Mistral Vibe", status=ProviderStatus.ACTIVE
+        )
+
+    def resolve_vibe_api_key(self) -> str:
+        return os.environ.get("MISTRAL_API_KEY", "")
 
     def resolve_claude_api_key(self) -> str:
         key = os.environ.get("ANTHROPIC_API_KEY", "")

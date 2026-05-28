@@ -74,3 +74,46 @@ class TestAutoDetector:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         key = AutoDetector(home_dir=tmp_path).resolve_claude_api_key()
         assert key == ""
+
+
+class TestVibeDetector:
+    def test_detects_vibe_when_config_exists_and_key_in_env(
+        self, tmp_path, monkeypatch
+    ):
+        vibe_dir = tmp_path / ".vibe"
+        vibe_dir.mkdir()
+        (vibe_dir / "config.toml").write_text("[session_logging]\nenabled = true\n")
+        monkeypatch.setenv("MISTRAL_API_KEY", "test-mistral-key")
+        result = AutoDetector(home_dir=tmp_path).detect_vibe()
+        assert result.status == ProviderStatus.ACTIVE
+        assert result.id == "vibe"
+        assert result.display_name == "Mistral Vibe"
+
+    def test_not_detected_when_config_missing(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
+        result = AutoDetector(home_dir=tmp_path).detect_vibe()
+        assert result.status == ProviderStatus.NOT_DETECTED
+
+    def test_not_detected_when_no_api_key(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
+        vibe_dir = tmp_path / ".vibe"
+        vibe_dir.mkdir()
+        (vibe_dir / "config.toml").write_text("")
+        result = AutoDetector(home_dir=tmp_path).detect_vibe()
+        assert result.status == ProviderStatus.NOT_DETECTED
+
+    def test_detect_all_includes_vibe(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
+        result = AutoDetector(home_dir=tmp_path).detect_all()
+        assert any(p.id == "vibe" for p in result)
+
+    def test_resolve_vibe_api_key_from_env(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("MISTRAL_API_KEY", "sk-mistral-test")
+        key = AutoDetector(home_dir=tmp_path).resolve_vibe_api_key()
+        assert key == "sk-mistral-test"
+
+    def test_resolve_vibe_api_key_empty_when_unset(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
+        key = AutoDetector(home_dir=tmp_path).resolve_vibe_api_key()
+        assert key == ""

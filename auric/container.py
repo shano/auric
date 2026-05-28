@@ -5,6 +5,7 @@ import httpx
 from auric.app import AppController
 from auric.config.manager import ConfigManager
 from auric.providers.claude import ClaudeProvider
+from auric.providers.vibe import VibeProvider
 from auric.services.collector import UsageCollector
 from auric.services.detector import AutoDetector
 from auric.services.storage import SQLiteStorage
@@ -32,6 +33,13 @@ def build() -> AppController:
                 stats_cache_path=Path.home() / ".claude" / "stats-cache.json",
                 http_client=http_client,
                 api_key=api_key,
+            )
+            providers.append((provider_state, impl))
+        elif provider_state.id == "vibe":
+            impl = VibeProvider(
+                logs_dir=Path.home() / ".vibe" / "logs" / "session",
+                http_client=http_client,
+                api_key=detector.resolve_vibe_api_key(),
             )
             providers.append((provider_state, impl))
 
