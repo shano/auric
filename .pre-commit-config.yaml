@@ -10,3 +10,4 @@ repos:
     hooks:
       - id: bandit
         args: ["-r", "auric/", "-ll", "--quiet"]
+        pass_filenames: false
