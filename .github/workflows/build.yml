@@ -48,7 +48,8 @@ jobs:
       - name: Patch spec version
         run: |
           VERSION="${{ inputs.tag }}"
-          sed -i "s/^Version:.*/Version:        ${VERSION#v}/" packaging/auric.spec
+          VERSION="${VERSION#auric-v}"
+          sed -i "s/^Version:.*/Version:        ${VERSION}/" packaging/auric.spec
       - name: Build RPM
         run: |
           rpmdev-setuptree
