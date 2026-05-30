@@ -1,6 +1,6 @@
 [project]
 name = "auric"
-version = "0.1.0"
+version = "0.2.0"
 description = "Linux/GNOME AI tool usage tracker"
 readme = "README.md"
 license = { text = "MIT" }
