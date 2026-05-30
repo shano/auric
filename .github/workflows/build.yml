@@ -37,7 +37,7 @@ jobs:
       - name: Install build deps
         run: |
           dnf install -y git curl python3-devel python3-hatchling \
-            pyproject-rpm-macros python3-gobject rpm-build rpmdevtools
+            pyproject-rpm-macros python3-gobject rpm-build rpmdevtools gh
       - uses: actions/checkout@v4
       - name: Install uv
         run: |
