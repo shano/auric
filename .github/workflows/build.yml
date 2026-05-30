@@ -55,6 +55,8 @@ jobs:
           rpmdev-setuptree
           cp packaging/auric.spec ~/rpmbuild/SPECS/
           cp dist/auric-*.tar.gz ~/rpmbuild/SOURCES/
+          rpmbuild -br --nodeps ~/rpmbuild/SPECS/auric.spec || true
+          dnf install -y ~/rpmbuild/SRPMS/*.buildreqs.nosrc.rpm
           rpmbuild -bb ~/rpmbuild/SPECS/auric.spec
       - name: Upload to release
         run: |
