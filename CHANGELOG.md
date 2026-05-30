@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.1](https://github.com/shano/auric/compare/auric-v0.2.0...auric-v0.2.1) (2026-05-30)
+
+
+### Bug Fixes
+
+* install gh CLI in Fedora container for RPM release upload ([26da75d](https://github.com/shano/auric/commit/26da75d4d324f9f9512fff745367e978abe4aa30))
+* pass --repo to gh release upload in Fedora container ([a771d87](https://github.com/shano/auric/commit/a771d87ea56d85077f5f2e9d4016c611a38eadbc))
+* strip auric-v prefix from tag when patching RPM spec version ([1dd1fc8](https://github.com/shano/auric/commit/1dd1fc82f68ed0f81718b9926030c7762563f62f))
+* two-pass RPM build to resolve pyproject_buildrequires dynamic deps ([92f038f](https://github.com/shano/auric/commit/92f038f0aa666d07e5833c2de51648b3a1e1ad59))
+
 ## [0.2.0](https://github.com/shano/auric/compare/auric-v0.1.0...auric-v0.2.0) (2026-05-30)
 
 
